@@ -1,0 +1,140 @@
+---
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+  name: notebook-deployer
+  annotations:
+    openshift.io/display-name: Jupyter Notebook
+    description: Template for deploying Jupyter Notebook images.
+    iconClass: icon-python
+    tags: python,jupyter
+parameters:
+  - name: APPLICATION_NAME
+    value: jupyter-notebook
+    required: true
+  - name: NOTEBOOK_IMAGE
+    value: s2i-minimal-notebook:latest
+    required: true
+  - name: NOTEBOOK_PASSWORD
+    value: ""
+    required: true
+  - name: NOTEBOOK_INTERFACE
+    value: classic
+  - name: NOTEBOOK_MEMORY
+    value: 1Gi
+    required: false
+  - name: NOTEBOOK_PATH
+    value: ""
+    required: false
+  - name: NOTEBOOK_PORT
+    value: "8080"
+    required: false
+  - name: PRELOAD_REPOS
+    value: ""
+    required: false
+objects:
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: "${APPLICATION_NAME}"
+      labels:
+        app: "${APPLICATION_NAME}"
+    data:
+      "custom.js": |
+        define(['base/js/namespace'], function(Jupyter){
+          Jupyter._target = '_self';
+        });
+
+  - kind: DeploymentConfig
+    apiVersion: apps.openshift.io/v1
+    metadata:
+      name: "${APPLICATION_NAME}"
+      labels:
+        app: "${APPLICATION_NAME}"
+    spec:
+      strategy:
+        type: Recreate
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+          imageChangeParams:
+            automatic: true
+            containerNames:
+              - notebook
+            from:
+              kind: ImageStreamTag
+              name: "${NOTEBOOK_IMAGE}"
+      replicas: 1
+      selector:
+        app: "${APPLICATION_NAME}"
+        deploymentconfig: "${APPLICATION_NAME}"
+      template:
+        metadata:
+          labels:
+            app: "${APPLICATION_NAME}"
+            deploymentconfig: "${APPLICATION_NAME}"
+        spec:
+          containers:
+            - name: notebook
+              image: "${APPLICATION_NAME}:latest"
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+              resources:
+                limits:
+                  memory: "${NOTEBOOK_MEMORY}"
+              env:
+                - name: JUPYTER_NOTEBOOK_INTERFACE
+                  value: "${NOTEBOOK_INTERFACE}"
+                - name: JUPYTER_NOTEBOOK_PASSWORD
+                  value: "${NOTEBOOK_PASSWORD}"
+                - name: JUPYTER_NOTEBOOK_PATH
+                  value: "${NOTEBOOK_PATH}"
+                - name: JUPYTER_NOTEBOOK_PORT
+                  value: "${NOTEBOOK_PORT}"
+                - name: JUPYTER_PRELOAD_REPOS
+                  value: "${PRELOAD_REPOS}"
+              volumeMounts:
+                - name: notebook-config
+                  mountPath: /opt/app-root/src/.jupyter/
+          volumes:
+            - name: notebook-config
+              configMap:
+                name: "${APPLICATION_NAME}"
+                items:
+                  - key: custom.js
+                    path: custom/custom.js
+          automountServiceAccountToken: false
+
+  - kind: Service
+    apiVersion: v1
+    metadata:
+      name: "${APPLICATION_NAME}"
+      labels:
+        app: "${APPLICATION_NAME}"
+    spec:
+      ports:
+        - name: 8080-tcp
+          protocol: TCP
+          port: 8080
+          targetPort: 8080
+      selector:
+        app: "${APPLICATION_NAME}"
+        deploymentconfig: "${APPLICATION_NAME}"
+
+  - kind: Route
+    apiVersion: route.openshift.io/v1
+    metadata:
+      name: "${APPLICATION_NAME}"
+      labels:
+        app: "${APPLICATION_NAME}"
+    spec:
+      host: ""
+      to:
+        kind: Service
+        name: "${APPLICATION_NAME}"
+      port:
+        targetPort: 8080-tcp
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Allow

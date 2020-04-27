@@ -23,6 +23,11 @@
       "title": "Deploying JupyterHub as a Service"
     },
     {
+      "external_link": "https://learn.openshift.com/ai-machine-learning/jupyter-notebooks-dependencies/",
+      "course_id": "jupyter-notebooks-dependencies",
+      "title": "Jupyter Notebooks: Dependencies"
+    },
+    {
       "external_link": "https://learn.openshift.com/ai-machine-learning/jupyterhub-workspace/",
       "course_id": "jupyterhub-workspace",
       "title": "Multi-user Workspace Using JupyterHub"
