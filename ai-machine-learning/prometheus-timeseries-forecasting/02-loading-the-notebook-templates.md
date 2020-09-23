@@ -2,7 +2,7 @@ Please wait for a few minutes while the environment loads.
 
 ### Accessing the Jupyter Notebook Environment
 * The jupyter environment with the workshop notebooks is available here: <br>
-http://pad-workshop-myproject.[[HOST_SUBDOMAIN]]-80-[[KATACODA_HOST]].environments.katacoda.com/
+https://pad-workshop-myproject.[[HOST_SUBDOMAIN]]-80-[[KATACODA_HOST]].environments.katacoda.com/
 
 * You will need a password to access the environment. <br>
   The password is `secret`{{copy}} <br>
